@@ -1,0 +1,14 @@
+.map {
+	border: medium solid #999;
+}
+
+.gratBackground {
+    fill: #D5E3FF;
+}
+
+.gratLines {
+    fill: none;
+    stroke: #999;
+    stroke-width: 1px;
+}
+

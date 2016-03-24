@@ -12,3 +12,9 @@
     stroke-width: 1px;
 }
 
+.backgroundCountry {
+    fill: #FFF;
+    stroke: #CCC;
+    stroke-width: 2px;
+}
+

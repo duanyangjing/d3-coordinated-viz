@@ -1,5 +1,22 @@
 window.onload = setMap();
 
+var attrArray = ["city_unmarried_m_f", "rural_unmarried_m_f", "city_baby_m_f", "rural_baby_m_f", "total_city_percent"];
+var expressed = attrArray[2];
+
+var chartWidth = window.innerWidth * 0.425,
+	chartHeight = 550,
+    leftPadding = 30,
+    rightPadding = 2,
+    topBottomPadding = 5,
+    chartInnerWidth = chartWidth - leftPadding - rightPadding,
+    chartInnerHeight = chartHeight - topBottomPadding * 2,
+    translate = "translate(" + leftPadding + "," + topBottomPadding + ")";
+
+// yscale to generate the height of each bar based on attribute value
+var yScale = d3.scale.linear()
+	.range([chartHeight - 10, 50])
+	.domain([100, 180])
+
 function setMap() {
 	var width = window.innerWidth * 0.5, height = 550;
 
@@ -44,6 +61,7 @@ function setMap() {
 		setEnumUnits(provinces, map, path, colorScale);
 
 		setChart(pop, colorScale);
+		createDropdown(pop);
 
 	};
 };
@@ -69,7 +87,6 @@ function setGraticule(map, path) {
 
 function joinData(provinces, pop) {
 	// join attributes from csv to geojson.
-	var attrArray = ["city_unmarried_m_f", "rural_unmarried_m_f", "city_baby_m_f", "rural_baby_m_f", "total_city_percent"];
 	for (var i = 0; i < pop.length; i++) {
 		var csvProv = pop[i];
 		var csvKey = csvProv.name;
@@ -107,6 +124,9 @@ function setEnumUnits(provinces, map, path, colorScale) {
 };
 
 function makeColorScale(data) {
+	//data is an array of provinces
+	console.log("From function makeColorScale:");
+	console.log("expressed attribute: " + expressed);
 	console.log(data);
     var colorClasses = [
         "#D4B9DA",
@@ -122,7 +142,7 @@ function makeColorScale(data) {
     //build array of all values of the expressed attribute
     var domainArray = [];
     for (var i = 0; i < data.length; i++){
-        var val = parseFloat(data[i]["city_baby_m_f"]);
+        var val = parseFloat(data[i][expressed]);
         domainArray.push(val);
     };
 
@@ -142,9 +162,9 @@ function makeColorScale(data) {
 }
 
 // deal with enumUnits without data
-function choropleth(props, colorScale){
+function choropleth(props, colorScale) {
     //make sure attribute value is a number
-    var val = parseFloat(props["city_baby_m_f"]);
+    var val = parseFloat(props[expressed]);
     //if attribute value exists, assign a color; otherwise assign gray
     if (val && val != NaN){
         return colorScale(val);
@@ -154,15 +174,6 @@ function choropleth(props, colorScale){
 };
 
 function setChart(pop, colorScale) {
-	var chartWidth = window.innerWidth * 0.425,
-		chartHeight = 550,
-	    leftPadding = 30,
-        rightPadding = 2,
-        topBottomPadding = 5,
-        chartInnerWidth = chartWidth - leftPadding - rightPadding,
-        chartInnerHeight = chartHeight - topBottomPadding * 2,
-        translate = "translate(" + leftPadding + "," + topBottomPadding + ")";
-
 	var chart = d3.select("body")
 		.append("svg")
 		.attr("width", chartWidth)
@@ -175,36 +186,20 @@ function setChart(pop, colorScale) {
         .attr("height", chartInnerHeight)
         .attr("transform", translate);
 
-	// yscale to generate the height of each bar based on attribute value
-	var yScale = d3.scale.linear()
-		.range([chartHeight - 10, 50])
-		.domain([100, 135])
-
-	var bars = chart.selectAll(".bars")
+	var bars = chart.selectAll(".bar")
 		.data(pop)
 		.enter()
 		.append("rect")
 		.sort(function(a, b){
-			return a["city_baby_m_f"] - b["city_baby_m_f"];
+			return a[expressed] - b[expressed];
 		})
 		.attr("class", function(d){
-			return "bars " + d.name;
+			return "bar " + d.name;
 		})
-		.attr("width", chartInnerWidth / pop.length - 1)
-		.attr("x", function(d, i){
-			return i * (chartInnerWidth / pop.length) + leftPadding;
-		})
-		.attr("height", function(d){
-			return yScale(parseFloat(d["city_baby_m_f"]));
-		})
-		.attr("y", function(d){
-			return chartHeight - yScale(parseFloat(d["city_baby_m_f"])) - topBottomPadding;
-		})
-		.style("fill", function(d){
-			return choropleth(d, colorScale);
-		})
-		//addNumbersToChart(chart, pop, chartWidth, chartHeight, yScale);
+		.attr("width", chartInnerWidth / pop.length - 1);
 
+		updateChart(bars, pop.length, colorScale);
+		//addNumbersToChart(chart, pop, chartWidth, chartHeight, yScale);
 
 	var chartTitle = chart.append("text")
 		.attr("x", 40)
@@ -228,14 +223,14 @@ function setChart(pop, colorScale) {
 		.attr("transform", translate);
 };
 
-function addNumbersToChart(chart, pop, chartWidth, chartHeight, yScale){
+function addNumbersToChart(chart, pop, chartWidth, chartHeight, yScale) {
 	// annotate each bar in the chart
 	var numbers = chart.selectAll(".numbers")
 		.data(pop)
 		.enter()
 		.append("text")
 		.sort(function(a, b){
-			return a["city_baby_m_f"] - b["city_baby_m_f"];
+			return a[expressed] - b[expressed];
 		})
 		.attr("class", function(d){
 			return "numbers " + d.name;
@@ -246,9 +241,65 @@ function addNumbersToChart(chart, pop, chartWidth, chartHeight, yScale){
 			return i * fraction + (fraction - 1) / 2;
 		})
 		.attr("y", function(d){
-			return chartHeight - yScale(parseFloat(d["city_baby_m_f"])) + 15;
+			return chartHeight - yScale(parseFloat(d[expressed])) + 15;
 		})
 		.text(function(d){
-			return d["city_baby_m_f"];
+			return d[expressed];
 		});
+}
+
+function createDropdown(pop) {
+	var dropdown = d3.select("body")
+		.append("select")
+		.attr("class", "dropdown")
+		.on("change", function() {
+			changeAttribute(this.value, pop)
+		});
+	// The initial option in the dropdown menu 
+	var titleOption = dropdown.append("option")
+		.attr("class", "titleOption")
+		.attr("disabled", "true")
+		.text("Select Attribute");
+	// Options about attributes to select in the dropdown menu
+	var attrOptions = dropdown.selectAll("attrOptions")
+		.data(attrArray)
+		.enter()
+		.append("option")
+		.attr("value", function(d) {return d})
+		.text(function(d) {return d});
+}
+
+function changeAttribute(attribute, pop) {
+	expressed = attribute;
+	var colorScale = makeColorScale(pop);
+
+	d3.selectAll(".enumUnits")
+		.style("fill", function(d) {
+			return choropleth(d.properties, colorScale)
+		});
+
+	var bars = d3.selectAll(".bar")
+		.sort(function(a, b){
+			return a[expressed] - b[expressed];
+		});
+
+	updateChart(bars, pop.length, colorScale);
+}
+
+function updateChart(bars, length, colorScale) {
+	bars.attr("x", function(d, i){
+		return i * (chartInnerWidth / length) + leftPadding;
+	})
+	.attr("height", function(d){
+		return yScale(parseFloat(d[expressed]));
+	})
+	.attr("y", function(d){
+		return chartHeight - yScale(parseFloat(d[expressed])) - topBottomPadding;
+	})
+	.style("fill", function(d){
+		return choropleth(d, colorScale);
+	});
+
+	d3.select(".chartTitle")
+		.text(expressed);
 }

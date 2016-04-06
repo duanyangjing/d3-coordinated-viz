@@ -154,17 +154,31 @@ function choropleth(props, colorScale){
 };
 
 function setChart(pop, colorScale) {
-	var chartWidth = window.innerWidth * 0.425, chartHeight = 550;
+	var chartWidth = window.innerWidth * 0.425,
+		chartHeight = 550,
+	    leftPadding = 30,
+        rightPadding = 2,
+        topBottomPadding = 5,
+        chartInnerWidth = chartWidth - leftPadding - rightPadding,
+        chartInnerHeight = chartHeight - topBottomPadding * 2,
+        translate = "translate(" + leftPadding + "," + topBottomPadding + ")";
 
 	var chart = d3.select("body")
 		.append("svg")
 		.attr("width", chartWidth)
 		.attr("height", chartHeight)
 		.attr("class", "chart");
+
+    var chartBackground = chart.append("rect")
+        .attr("class", "chartBackground")
+        .attr("width", chartInnerWidth)
+        .attr("height", chartInnerHeight)
+        .attr("transform", translate);
+
 	// yscale to generate the height of each bar based on attribute value
 	var yScale = d3.scale.linear()
-		.range([0, chartHeight])
-		.domain([100, 140])
+		.range([chartHeight - 10, 50])
+		.domain([100, 135])
 
 	var bars = chart.selectAll(".bars")
 		.data(pop)
@@ -176,20 +190,45 @@ function setChart(pop, colorScale) {
 		.attr("class", function(d){
 			return "bars " + d.name;
 		})
-		.attr("width", chartWidth / pop.length - 1)
+		.attr("width", chartInnerWidth / pop.length - 1)
 		.attr("x", function(d, i){
-			return i * (chartWidth / pop.length);
+			return i * (chartInnerWidth / pop.length) + leftPadding;
 		})
 		.attr("height", function(d){
 			return yScale(parseFloat(d["city_baby_m_f"]));
 		})
 		.attr("y", function(d){
-			return chartHeight - yScale(parseFloat(d["city_baby_m_f"]));
+			return chartHeight - yScale(parseFloat(d["city_baby_m_f"])) - topBottomPadding;
 		})
 		.style("fill", function(d){
 			return choropleth(d, colorScale);
 		})
+		//addNumbersToChart(chart, pop, chartWidth, chartHeight, yScale);
 
+
+	var chartTitle = chart.append("text")
+		.attr("x", 40)
+		.attr("y", 40)
+		.attr("class", "chartTitle")
+		.text("Sex-ratio of new-born population in cities");
+
+	var yAxis = d3.svg.axis()
+		.scale(yScale)
+		.orient("left");
+
+	var axis = chart.append("g")
+		.attr("class", "axis")
+		.attr("transform", translate)
+		.call(yAxis);
+
+	var chartFrame = chart.append("rect")
+		.attr("class", "chartFrame")
+		.attr("width", chartInnerWidth)
+		.attr("height", chartInnerHeight)
+		.attr("transform", translate);
+};
+
+function addNumbersToChart(chart, pop, chartWidth, chartHeight, yScale){
 	// annotate each bar in the chart
 	var numbers = chart.selectAll(".numbers")
 		.data(pop)
@@ -212,10 +251,4 @@ function setChart(pop, colorScale) {
 		.text(function(d){
 			return d["city_baby_m_f"];
 		});
-
-	var chartTitle = chart.append("text")
-		.attr("x", 20)
-		.attr("y", 40)
-		.attr("class", "chartTitle")
-		.text("city_baby_m_f");
-};
+}

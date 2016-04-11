@@ -38,17 +38,16 @@ function setMap() {
 
 	queue()
 		.defer(d3.csv, "data/population.csv")
-		// TODO: Try see if the original shapefile is projected
 		.defer(d3.json, "data/ChinaProvinces.topojson")
 		.defer(d3.json, "data/AsiaRegion_6simplified.topojson")
 		.await(callback); //send data to callback function once finish loading
 
-	function callback(error, pop, prov, asia) {
+	function callback(error, csvData, provData, asiaData) {
 		// second parameter need to inspect element and find objects
-		var asiaRegion = topojson.feature(asia, asia.objects.AsiaRegion);
-		var provinces = topojson.feature(prov, prov.objects.collection).features;
+		var asiaRegion = topojson.feature(asiaData, asiaData.objects.AsiaRegion);
+		var provinces = topojson.feature(provData, provData.objects.collection).features;
 		// new provinces with added attributes joined
-		provinces = joinData(provinces, pop);
+		provinces = joinData(provinces, csvData);
 		setGraticule(map, path);
 
         var backgroundCountry = map.append("path")
@@ -56,12 +55,13 @@ function setMap() {
         	.attr("class", "backgroundCountry")
         	.attr("d", path);
 
-        var colorScale = makeColorScale(pop);
+        var colorScale = makeColorScale(csvData);
 		
 		setEnumUnits(provinces, map, path, colorScale);
 
-		setChart(pop, colorScale);
-		createDropdown(pop);
+		setChart(csvData, colorScale);
+		createDropdown(csvData);
+		console.log(csvData);
 
 	};
 };
@@ -85,10 +85,10 @@ function setGraticule(map, path) {
         .attr("d", path); //project graticule lines
 };
 
-function joinData(provinces, pop) {
+function joinData(provinces, csvData) {
 	// join attributes from csv to geojson.
-	for (var i = 0; i < pop.length; i++) {
-		var csvProv = pop[i];
+	for (var i = 0; i < csvData.length; i++) {
+		var csvProv = csvData[i];
 		var csvKey = csvProv.name;
 
 		for (var a = 0; a < provinces.length; a++) {
@@ -98,8 +98,9 @@ function joinData(provinces, pop) {
 			if (jsonKey == csvKey) {
 				attrArray.forEach(function(attr){
 					var val = parseFloat(csvProv[attr]);
-					jsonProps[attr] = val;
+					jsonProps[attr] = Math.ceil(val);
 				})
+				jsonProps["region_code"] = csvProv["region_code"];
 			};
 		};
 	};
@@ -108,19 +109,28 @@ function joinData(provinces, pop) {
 };
 
 function setEnumUnits(provinces, map, path, colorScale) {
-		// select all must take a list, should be a list of features, not the whole feature collection
-	var enumUnits = map.selectAll(".provinces")
+	// select all must take a list, should be a list of features, not the whole feature collection
+	var enumUnits = map.selectAll(".enumUnits")
 		.data(provinces)
 		.enter()
 		.append("path")
-		.attr("class", "enumUnits")
-		.attr("id", function(d) {
-			return d.properties.name;
+		.attr("class", function(d) {
+			return "enumUnits " + d.properties.region_code;
 		})
 		.attr("d", path)
-		.style("fill", function(d){
+		.style("fill", function(d) {
 			return choropleth(d.properties, colorScale);
-		});
+		})
+		.on("mouseover", function(d) {
+			highlight(d.properties);
+		})
+		.on("mouseout", function(d) {
+			dehighlight(d.properties);
+		})
+		.on("mousemove", moveLabel);
+
+	var desc = enumUnits.append("desc")
+		.text('{"stroke": "#000", "stroke-width": "0.5px"}');
 };
 
 function makeColorScale(data) {
@@ -173,7 +183,7 @@ function choropleth(props, colorScale) {
     };
 };
 
-function setChart(pop, colorScale) {
+function setChart(csvData, colorScale) {
 	var chart = d3.select("body")
 		.append("svg")
 		.attr("width", chartWidth)
@@ -186,26 +196,31 @@ function setChart(pop, colorScale) {
         .attr("height", chartInnerHeight)
         .attr("transform", translate);
 
-	var bars = chart.selectAll(".bar")
-		.data(pop)
+	var bars = chart.selectAll(".bars")
+		.data(csvData)
 		.enter()
 		.append("rect")
 		.sort(function(a, b){
-			return a[expressed] - b[expressed];
+			return b[expressed] - a[expressed];
 		})
 		.attr("class", function(d){
-			return "bar " + d.name;
+			return "bars " + d.region_code;
 		})
-		.attr("width", chartInnerWidth / pop.length - 1);
+		.attr("width", chartInnerWidth / csvData.length - 1)
+		.on("mouseover", highlight)
+		.on("mouseout", dehighlight)
+		.on("mousemove", moveLabel);
 
-		updateChart(bars, pop.length, colorScale);
-		//addNumbersToChart(chart, pop, chartWidth, chartHeight, yScale);
+	var desc = bars.append("desc")
+		.text('{"stroke": "none", "stroke-width": "0px"}');
+
+	updateChart(bars, csvData.length, colorScale);
 
 	var chartTitle = chart.append("text")
 		.attr("x", 40)
 		.attr("y", 40)
 		.attr("class", "chartTitle")
-		.text("Sex-ratio of new-born population in cities");
+		.text(expressed);
 
 	var yAxis = d3.svg.axis()
 		.scale(yScale)
@@ -223,41 +238,16 @@ function setChart(pop, colorScale) {
 		.attr("transform", translate);
 };
 
-function addNumbersToChart(chart, pop, chartWidth, chartHeight, yScale) {
-	// annotate each bar in the chart
-	var numbers = chart.selectAll(".numbers")
-		.data(pop)
-		.enter()
-		.append("text")
-		.sort(function(a, b){
-			return a[expressed] - b[expressed];
-		})
-		.attr("class", function(d){
-			return "numbers " + d.name;
-		})
-		.attr("text-anchor", "middle")
-		.attr("x", function(d, i){
-			var fraction = chartWidth / pop.length;
-			return i * fraction + (fraction - 1) / 2;
-		})
-		.attr("y", function(d){
-			return chartHeight - yScale(parseFloat(d[expressed])) + 15;
-		})
-		.text(function(d){
-			return d[expressed];
-		});
-}
-
-function createDropdown(pop) {
+function createDropdown(csvData) {
 	var dropdown = d3.select("body")
 		.append("select")
 		.attr("class", "dropdown")
 		.on("change", function() {
-			changeAttribute(this.value, pop)
+			changeAttribute(this.value, csvData)
 		});
 	// The initial option in the dropdown menu 
 	var titleOption = dropdown.append("option")
-		.attr("class", "titleOption")
+		.attr("selected", "true")//this will set the default option in dropdown
 		.attr("disabled", "true")
 		.text("Select Attribute");
 	// Options about attributes to select in the dropdown menu
@@ -267,34 +257,40 @@ function createDropdown(pop) {
 		.append("option")
 		.attr("value", function(d) {return d})
 		.text(function(d) {return d});
-}
+};
 
-function changeAttribute(attribute, pop) {
+function changeAttribute(attribute, csvData) {
 	expressed = attribute;
-	var colorScale = makeColorScale(pop);
+	var colorScale = makeColorScale(csvData);
 
 	d3.selectAll(".enumUnits")
+		.transition()
+		.duration(1000)
 		.style("fill", function(d) {
-			return choropleth(d.properties, colorScale)
+			return choropleth(d.properties, colorScale);
 		});
 
-	var bars = d3.selectAll(".bar")
+	var bars = d3.selectAll(".bars")
 		.sort(function(a, b){
-			return a[expressed] - b[expressed];
+			return b[expressed] - a[expressed];
+		})
+		.transition()
+		.delay(function(d, i) {
+			return i * 20;
 		});
 
-	updateChart(bars, pop.length, colorScale);
-}
+	updateChart(bars, csvData.length, colorScale);
+};
 
 function updateChart(bars, length, colorScale) {
 	bars.attr("x", function(d, i){
 		return i * (chartInnerWidth / length) + leftPadding;
 	})
 	.attr("height", function(d){
-		return yScale(parseFloat(d[expressed]));
+		return chartInnerHeight - (parseFloat(d[expressed]));
 	})
 	.attr("y", function(d){
-		return chartHeight - yScale(parseFloat(d[expressed])) - topBottomPadding;
+		return yScale(parseFloat(d[expressed])) + topBottomPadding;
 	})
 	.style("fill", function(d){
 		return choropleth(d, colorScale);
@@ -302,4 +298,71 @@ function updateChart(bars, length, colorScale) {
 
 	d3.select(".chartTitle")
 		.text(expressed);
+};
+
+function highlight(props) {
+	//!!This selection won't work for names with multiple space
+	d3.selectAll("." + props.region_code)
+		.style({
+			"stroke": "blue",
+			"stroke-width": "2"
+		});
+
+	setLabel(props);
 }
+
+function dehighlight(props) {
+	d3.selectAll("." + props.region_code)
+		.style({
+			"stroke": function() {
+				return getStyle(this, "stroke")
+			},
+			"stroke-width": function() {
+				return getStyle(this, "stroke-width")
+			}
+		});
+
+	function getStyle(element, styleName) {
+		var styleText = d3.select(element)
+			.select("desc")
+			.text();
+
+		var styleObject = JSON.parse(styleText);
+		return styleObject[styleName];
+	};
+
+	d3.select(".infolabel")
+		.remove();
+};
+
+//set label, now is appended to body as div
+function setLabel(props) {
+    var labelAttribute = "<h1>" + props[expressed] +
+        "</h1><b>" + expressed + "</b>";
+
+    //create info label div
+    var infolabel = d3.select("body")
+        .append("div")
+        .attr({
+            "class": "infolabel",
+            "id": props.region_code + "_label"
+        })
+        .html(labelAttribute);
+
+    var regionName = infolabel.append("div")
+        .attr("class", "labelname")
+        .html(props.name);
+};
+
+//move info label with mouse
+function moveLabel() {
+    var x = d3.event.clientX + 10,
+        y = d3.event.clientY - 75;
+
+    d3.select(".infolabel")
+        .style({
+            "left": x + "px",
+            "top": y + "px"
+        });
+}
+

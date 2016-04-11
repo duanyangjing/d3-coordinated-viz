@@ -3,22 +3,22 @@ window.onload = setMap();
 var attrArray = ["city_unmarried_m_f", "rural_unmarried_m_f", "city_baby_m_f", "rural_baby_m_f", "total_city_percent"];
 var expressed = attrArray[2];
 
-var chartWidth = window.innerWidth * 0.425,
-	chartHeight = 550,
+var chartWidth = 500,
+	chartHeight = 450,
     leftPadding = 30,
     rightPadding = 2,
     topBottomPadding = 5,
     chartInnerWidth = chartWidth - leftPadding - rightPadding,
     chartInnerHeight = chartHeight - topBottomPadding * 2,
-    translate = "translate(" + leftPadding + "," + topBottomPadding + ")";
+    translate = "translate(" + leftPadding + "," + topBottomPadding + ")";//moves an element
 
 // yscale to generate the height of each bar based on attribute value
 var yScale = d3.scale.linear()
 	.range([chartHeight - 10, 50])
-	.domain([100, 180])
+	.domain([100, 150])
 
 function setMap() {
-	var width = window.innerWidth * 0.5, height = 550;
+	var width = 550, height = 450;
 
 	var map = d3.select("body")
 		.append("svg")
@@ -28,9 +28,9 @@ function setMap() {
 
 	var projection = d3.geo.albers()
 		.center([0, 36.33])
-		.rotate([-104.45, 0, 0])
+		.rotate([-104, 0, 0])
 		.parallels([29.5, 45.17])
-		.scale(850)
+		.scale(700)
 		.translate([width / 2, height / 2]);
 
 	var path = d3.geo.path()
@@ -56,12 +56,10 @@ function setMap() {
         	.attr("d", path);
 
         var colorScale = makeColorScale(csvData);
-		
 		setEnumUnits(provinces, map, path, colorScale);
 
 		setChart(csvData, colorScale);
 		createDropdown(csvData);
-		console.log(csvData);
 
 	};
 };
@@ -99,12 +97,11 @@ function joinData(provinces, csvData) {
 				attrArray.forEach(function(attr){
 					var val = parseFloat(csvProv[attr]);
 					jsonProps[attr] = Math.ceil(val);
-				})
+				});
 				jsonProps["region_code"] = csvProv["region_code"];
 			};
 		};
 	};
-
 	return provinces;
 };
 
@@ -135,9 +132,6 @@ function setEnumUnits(provinces, map, path, colorScale) {
 
 function makeColorScale(data) {
 	//data is an array of provinces
-	console.log("From function makeColorScale:");
-	console.log("expressed attribute: " + expressed);
-	console.log(data);
     var colorClasses = [
         "#D4B9DA",
         "#C994C7",
@@ -164,7 +158,6 @@ function makeColorScale(data) {
     });
     //remove first value from domain array to create class breakpoints
     domainArray.shift();
-
     //assign array of last 4 cluster minimums as domain
     colorScale.domain(domainArray);
 
@@ -215,13 +208,23 @@ function setChart(csvData, colorScale) {
 		.text('{"stroke": "none", "stroke-width": "0px"}');
 
 	updateChart(bars, csvData.length, colorScale);
-
+	updateYAxis(chart);
 	var chartTitle = chart.append("text")
 		.attr("x", 40)
 		.attr("y", 40)
 		.attr("class", "chartTitle")
 		.text(expressed);
 
+	var chartFrame = chart.append("rect")
+		.attr("class", "chartFrame")
+		.attr("width", chartInnerWidth)
+		.attr("height", chartInnerHeight)
+		.attr("transform", translate);
+};
+
+//update yAxis, redraw the axis based on different yScale
+function updateYAxis(chart) {
+	d3.select(".axis").remove();
 	var yAxis = d3.svg.axis()
 		.scale(yScale)
 		.orient("left");
@@ -230,13 +233,7 @@ function setChart(csvData, colorScale) {
 		.attr("class", "axis")
 		.attr("transform", translate)
 		.call(yAxis);
-
-	var chartFrame = chart.append("rect")
-		.attr("class", "chartFrame")
-		.attr("width", chartInnerWidth)
-		.attr("height", chartInnerHeight)
-		.attr("transform", translate);
-};
+}
 
 function createDropdown(csvData) {
 	var dropdown = d3.select("body")
@@ -278,7 +275,9 @@ function changeAttribute(attribute, csvData) {
 		.delay(function(d, i) {
 			return i * 20;
 		});
-
+	//change yScale, axis, and bar height
+	updateYScale(expressed);
+	updateYAxis(d3.select(".chart"));
 	updateChart(bars, csvData.length, colorScale);
 };
 
@@ -287,10 +286,10 @@ function updateChart(bars, length, colorScale) {
 		return i * (chartInnerWidth / length) + leftPadding;
 	})
 	.attr("height", function(d){
-		return chartInnerHeight - (parseFloat(d[expressed]));
+		return chartInnerHeight - yScale(Math.ceil(parseFloat(d[expressed])));
 	})
 	.attr("y", function(d){
-		return yScale(parseFloat(d[expressed])) + topBottomPadding;
+		return yScale(Math.ceil(parseFloat(d[expressed]))) + topBottomPadding;
 	})
 	.style("fill", function(d){
 		return choropleth(d, colorScale);
@@ -298,6 +297,33 @@ function updateChart(bars, length, colorScale) {
 
 	d3.select(".chartTitle")
 		.text(expressed);
+};
+
+//update yScale based on chosen attribute
+//they have different range of values, cannot use one yScale for all of them.
+function updateYScale(expressed) {
+	//reset to default
+	yScale = d3.scale.linear()
+		.range([chartHeight - 10, 50])
+		.domain([100, 150]);
+
+	if (expressed == "rural_unmarried_m_f") {
+	yScale = d3.scale.linear()
+		.range([chartHeight - 10, 50])
+		.domain([120, 190])
+	};
+
+	if (expressed == "rural_baby_m_f") {
+	yScale = d3.scale.linear()
+		.range([chartHeight - 10, 50])
+		.domain([90, 150])
+	};
+
+	if (expressed == "total_city_percent") {
+		yScale = d3.scale.linear()
+			.range([chartHeight - 10, 50])
+			.domain([10, 100])
+	};
 };
 
 function highlight(props) {
@@ -337,8 +363,17 @@ function dehighlight(props) {
 
 //set label, now is appended to body as div
 function setLabel(props) {
-    var labelAttribute = "<h1>" + props[expressed] +
+	//different type of labels for different attributes
+	var labelAttribute;
+	if (!props[expressed]) {
+		labelAttribute = "<h1>" + "Nodata" + "</h1><b>" + expressed + "</b>";
+	} else if (expressed == "total_city_percent") {
+		labelAttribute = "<h1>" + Math.ceil(props[expressed]) + "%" +
         "</h1><b>" + expressed + "</b>";
+	} else {
+		labelAttribute = "<h1>" + Math.ceil(props[expressed]) +
+        "</h1><b>" + expressed + "</b>";
+	};
 
     //create info label div
     var infolabel = d3.select("body")
@@ -356,13 +391,25 @@ function setLabel(props) {
 
 //move info label with mouse
 function moveLabel() {
-    var x = d3.event.clientX + 10,
-        y = d3.event.clientY - 75;
+	var labelWidth = d3.select(".infolabel")
+		.node()
+		.getBoundingClientRect()
+		.width;
+
+    var x1 = d3.event.clientX + 10,
+        y1 = d3.event.clientY - 75,
+        x2 = d3.event.clientX - labelWidth - 10,
+        y2 = d3.event.clientY + 25;
+
+    //horizontal label coordinate, testing for overflow
+    var x = d3.event.clientX > window.innerWidth - labelWidth - 20 ? x2 : x1; 
+    //vertical label coordinate, testing for overflow
+    var y = d3.event.clientY < 75 ? y2 : y1;
 
     d3.select(".infolabel")
         .style({
             "left": x + "px",
             "top": y + "px"
         });
-}
+};
 

@@ -5,11 +5,11 @@ var expressed = attrArray[0];
 
 //name of each attribute to show on the map
 var indicatorName = {};
-indicatorName["city_unmarried_m_f"] = "Gender-ratio of Unmarried Population in Cities";
-indicatorName["rural_unmarried_m_f"] = "Gender-ratio of Unmarried Population in Countryside";
-indicatorName["city_baby_m_f"] = "Gender-ratio of New-born Population in Cities";
-indicatorName["rural_baby_m_f"] = "Gender-ratio of New-born Population in Countryside";
-indicatorName["total_city_percent"] = "Percent of Population in Cities";
+indicatorName["city_unmarried_m_f"] = "Sex ratio of Unmarried Urban Population";
+indicatorName["rural_unmarried_m_f"] = "Sex ratio of Unmarried Rural Population";
+indicatorName["city_baby_m_f"] = "Sex ratio of New-born Urban Population";
+indicatorName["rural_baby_m_f"] = "Sex ratio of New-born Ruran Population";
+indicatorName["total_city_percent"] = "Percent of Urban Population";
 
 var chartWidth = 500,
 	chartHeight = 460,
@@ -223,11 +223,6 @@ function setChart(csvData, colorScale) {
 
 	updateChart(bars, csvData.length, colorScale);
 	updateYAxis(chart);
-	// var chartTitle = chart.append("text")
-	// 	.attr("x", 40)
-	// 	.attr("y", 40)
-	// 	.attr("class", "chartTitle")
-	// 	.text(indicatorName[expressed]);
 
 	var chartFrame = chart.append("rect")
 		.attr("class", "chartFrame")
@@ -256,12 +251,7 @@ function createDropdown(csvData) {
 		.on("change", function() {
 			changeAttribute(this.value, csvData)
 		});
-	// The initial option in the dropdown menu 
-	// var titleOption = dropdown.append("option")
-	// 	.attr("selected", "true")//this will set the default option in dropdown
-	// 	//.attr("disabled", "true")
-	// 	.text(indicatorName[expressed]);
-	// Options about attributes to select in the dropdown menu
+
 	var attrOptions = dropdown.selectAll("attrOptions")
 		.data(attrArray)
 		.enter()
@@ -309,8 +299,6 @@ function updateChart(bars, length, colorScale) {
 		return choropleth(d, colorScale);
 	});
 
-	d3.select(".chartTitle")
-		.text(indicatorName[expressed]);
 };
 
 //update yScale based on chosen attribute

@@ -34,7 +34,6 @@ body {
 }
 
 .chart {
-    //float: right;
     margin: 10px 0 0 30px;
 }
 
@@ -72,9 +71,9 @@ body {
 }
 
 .dropdown {
-    position: absolute;
-    top: 210px;
-    left: 33%;
+    position: relative;
+    top: -550px;
+    margin-left: 60px;
     z-index: 10;
     font-family: sans-serif;
     font-size: 1em;
@@ -119,8 +118,18 @@ option {
 .description {
     margin-left: auto;
     margin-right: auto;
-    width: 1000px;
+    width: 1100px;
     font-size: 18px;
     color: yellow;
+    text-align: justify;
 }
 
+.indicatorDesc {
+    position:relative;
+    left: 500px;
+    width: 600px;
+}
+
+.about {
+    text-align: center;
+}

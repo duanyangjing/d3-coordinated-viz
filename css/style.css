@@ -1,6 +1,14 @@
+body {
+    background-color: #374140;
+}
+.container {
+    width: 1200px;
+    margin: 40px auto;
+}
+
 .map {
 	border: medium solid #999;
-    margin: 10px 0 0 20px;
+    margin: 10px 0 0 60px;
 }
 
 .gratBackground {
@@ -27,13 +35,15 @@
 
 .chart {
     //float: right;
-    margin: 10px 20px 0 0;
+    margin: 10px 0 0 30px;
 }
 
 .chartTitle {
     font-family: sans-serif;
     font-size: 1.5em;
     font-weight: bold;
+    margin: auto;
+    text-align: center;
 }
 
 .chartBackground {
@@ -63,12 +73,12 @@
 
 .dropdown {
     position: absolute;
-    top: 30px;
-    left: 40px;
+    top: 210px;
+    left: 33%;
     z-index: 10;
     font-family: sans-serif;
     font-size: 1em;
-    font-weight: bold;
+    //font-weight: bold;
     padding: 2px;
     border: 1px solid #999;
     box-shadow: 2px 2px 4px #999;
@@ -87,6 +97,7 @@ option {
     border: solid thin #fff;
     padding: 5px 10px;
     top: -75px;
+    z-index: 10;
 }
 
 .infolabel h1 {
@@ -102,5 +113,14 @@ option {
     margin-bottom: 20px;
     text-align: center;
     font-size: 32px;
+    color: yellow;
+}
+
+.description {
+    margin-left: auto;
+    margin-right: auto;
+    width: 1000px;
+    font-size: 18px;
+    color: yellow;
 }
 

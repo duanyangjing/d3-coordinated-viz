@@ -1,10 +1,18 @@
 window.onload = setMap();
 
 var attrArray = ["city_unmarried_m_f", "rural_unmarried_m_f", "city_baby_m_f", "rural_baby_m_f", "total_city_percent"];
-var expressed = attrArray[2];
+var expressed = attrArray[0];
+
+//name of each attribute to show on the map
+var indicatorName = {};
+indicatorName["city_unmarried_m_f"] = "Gender-ratio of Unmarried Population in Cities";
+indicatorName["rural_unmarried_m_f"] = "Gender-ratio of Unmarried Population in Countryside";
+indicatorName["city_baby_m_f"] = "Gender-ratio of New-born Population in Cities";
+indicatorName["rural_baby_m_f"] = "Gender-ratio of New-born Population in Countryside";
+indicatorName["total_city_percent"] = "Percent of Population in Cities";
 
 var chartWidth = 500,
-	chartHeight = 450,
+	chartHeight = 460,
     leftPadding = 30,
     rightPadding = 2,
     topBottomPadding = 5,
@@ -15,16 +23,22 @@ var chartWidth = 500,
 // yscale to generate the height of each bar based on attribute value
 var yScale = d3.scale.linear()
 	.range([chartHeight - 10, 50])
-	.domain([100, 150])
+	.domain([100, 150]);
 
 function setMap() {
 	var width = 550, height = 450;
 
-	var map = d3.select("body")
+	var container = d3.select("body")
+		.append("div")
+		.attr("class", "container")
+		//.attr("width", "1100px")
+
+	var map = d3.select(".container")
 		.append("svg")
 		.attr("class", "map")
 		.attr("width", width)
 		.attr("height", height);
+
 
 	var projection = d3.geo.albers()
 		.center([0, 36.33])
@@ -177,11 +191,11 @@ function choropleth(props, colorScale) {
 };
 
 function setChart(csvData, colorScale) {
-	var chart = d3.select("body")
+	var chart = d3.select(".container")
 		.append("svg")
+		.attr("class", "chart")
 		.attr("width", chartWidth)
-		.attr("height", chartHeight)
-		.attr("class", "chart");
+		.attr("height", chartHeight);
 
     var chartBackground = chart.append("rect")
         .attr("class", "chartBackground")
@@ -209,11 +223,11 @@ function setChart(csvData, colorScale) {
 
 	updateChart(bars, csvData.length, colorScale);
 	updateYAxis(chart);
-	var chartTitle = chart.append("text")
-		.attr("x", 40)
-		.attr("y", 40)
-		.attr("class", "chartTitle")
-		.text(expressed);
+	// var chartTitle = chart.append("text")
+	// 	.attr("x", 40)
+	// 	.attr("y", 40)
+	// 	.attr("class", "chartTitle")
+	// 	.text(indicatorName[expressed]);
 
 	var chartFrame = chart.append("rect")
 		.attr("class", "chartFrame")
@@ -236,24 +250,24 @@ function updateYAxis(chart) {
 }
 
 function createDropdown(csvData) {
-	var dropdown = d3.select("body")
+	var dropdown = d3.select(".container")
 		.append("select")
 		.attr("class", "dropdown")
 		.on("change", function() {
 			changeAttribute(this.value, csvData)
 		});
 	// The initial option in the dropdown menu 
-	var titleOption = dropdown.append("option")
-		.attr("selected", "true")//this will set the default option in dropdown
-		.attr("disabled", "true")
-		.text("Select Attribute");
+	// var titleOption = dropdown.append("option")
+	// 	.attr("selected", "true")//this will set the default option in dropdown
+	// 	//.attr("disabled", "true")
+	// 	.text(indicatorName[expressed]);
 	// Options about attributes to select in the dropdown menu
 	var attrOptions = dropdown.selectAll("attrOptions")
 		.data(attrArray)
 		.enter()
 		.append("option")
 		.attr("value", function(d) {return d})
-		.text(function(d) {return d});
+		.text(function(d) {return indicatorName[d]});
 };
 
 function changeAttribute(attribute, csvData) {
@@ -296,7 +310,7 @@ function updateChart(bars, length, colorScale) {
 	});
 
 	d3.select(".chartTitle")
-		.text(expressed);
+		.text(indicatorName[expressed]);
 };
 
 //update yScale based on chosen attribute
@@ -366,13 +380,13 @@ function setLabel(props) {
 	//different type of labels for different attributes
 	var labelAttribute;
 	if (!props[expressed]) {
-		labelAttribute = "<h1>" + "Nodata" + "</h1><b>" + expressed + "</b>";
+		labelAttribute = "<h1>" + "Nodata" + "</h1><b>" + "</b>";
 	} else if (expressed == "total_city_percent") {
 		labelAttribute = "<h1>" + Math.ceil(props[expressed]) + "%" +
-        "</h1><b>" + expressed + "</b>";
+        "</h1><b>" + "</b>";
 	} else {
 		labelAttribute = "<h1>" + Math.ceil(props[expressed]) +
-        "</h1><b>" + expressed + "</b>";
+        "</h1><b>" + "</b>";
 	};
 
     //create info label div
@@ -395,16 +409,17 @@ function moveLabel() {
 		.node()
 		.getBoundingClientRect()
 		.width;
-
-    var x1 = d3.event.clientX + 10,
-        y1 = d3.event.clientY - 75,
-        x2 = d3.event.clientX - labelWidth - 10,
-        y2 = d3.event.clientY + 25;
+	//clientXY gives the coordinates relative to current window, will be problematic when scrolling
+	//pageXY gives the coordinates relative to the whole rendered page, including hidden part after scrolling
+    var x1 = d3.event.pageX + 10,
+        y1 = d3.event.pageY - 75,
+        x2 = d3.event.pageX - labelWidth - 10,
+        y2 = d3.event.pageY + 25;
 
     //horizontal label coordinate, testing for overflow
-    var x = d3.event.clientX > window.innerWidth - labelWidth - 20 ? x2 : x1; 
+    var x = d3.event.pageX > window.innerWidth - labelWidth - 20 ? x2 : x1; 
     //vertical label coordinate, testing for overflow
-    var y = d3.event.clientY < 75 ? y2 : y1;
+    var y = d3.event.pageY < 75 ? y2 : y1;
 
     d3.select(".infolabel")
         .style({

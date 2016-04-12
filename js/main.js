@@ -12,7 +12,7 @@ indicatorName["rural_baby_m_f"] = "Sex ratio of New-born Ruran Population";
 indicatorName["total_city_percent"] = "Percent of Urban Population";
 
 var chartWidth = 500,
-	chartHeight = 460,
+	chartHeight = 350,
     leftPadding = 30,
     rightPadding = 2,
     topBottomPadding = 5,
@@ -22,18 +22,13 @@ var chartWidth = 500,
 
 // yscale to generate the height of each bar based on attribute value
 var yScale = d3.scale.linear()
-	.range([chartHeight - 10, 50])
-	.domain([100, 150]);
+	.range([chartHeight - 10, 10])
+	.domain([100, 140]);
 
 function setMap() {
-	var width = 550, height = 450;
+	var width = 600, height = 500;
 
-	var container = d3.select("body")
-		.append("div")
-		.attr("class", "container")
-		//.attr("width", "1100px")
-
-	var map = d3.select(".container")
+	var map = d3.select(".mapContainer")
 		.append("svg")
 		.attr("class", "map")
 		.attr("width", width)
@@ -42,9 +37,9 @@ function setMap() {
 
 	var projection = d3.geo.albers()
 		.center([0, 36.33])
-		.rotate([-104, 0, 0])
+		.rotate([-103, 0, 0])
 		.parallels([29.5, 45.17])
-		.scale(700)
+		.scale(750)
 		.translate([width / 2, height / 2]);
 
 	var path = d3.geo.path()
@@ -191,7 +186,7 @@ function choropleth(props, colorScale) {
 };
 
 function setChart(csvData, colorScale) {
-	var chart = d3.select(".container")
+	var chart = d3.select(".chartContainer")
 		.append("svg")
 		.attr("class", "chart")
 		.attr("width", chartWidth)
@@ -245,9 +240,9 @@ function updateYAxis(chart) {
 }
 
 function createDropdown(csvData) {
-	var dropdown = d3.select(".container")
-		.append("select")
-		.attr("class", "dropdown")
+	var dropdown = d3.select(".dropdown")
+		// .append("select")
+		// .attr("class", "dropdown")
 		.on("change", function() {
 			changeAttribute(this.value, csvData)
 		});
@@ -306,24 +301,24 @@ function updateChart(bars, length, colorScale) {
 function updateYScale(expressed) {
 	//reset to default
 	yScale = d3.scale.linear()
-		.range([chartHeight - 10, 50])
-		.domain([100, 150]);
+		.range([chartHeight - 10, 10])
+		.domain([100, 140]);
 
 	if (expressed == "rural_unmarried_m_f") {
 	yScale = d3.scale.linear()
-		.range([chartHeight - 10, 50])
+		.range([chartHeight - 10, 10])
 		.domain([120, 190])
 	};
 
 	if (expressed == "rural_baby_m_f") {
 	yScale = d3.scale.linear()
-		.range([chartHeight - 10, 50])
-		.domain([90, 150])
+		.range([chartHeight - 10, 10])
+		.domain([90, 140])
 	};
 
 	if (expressed == "total_city_percent") {
 		yScale = d3.scale.linear()
-			.range([chartHeight - 10, 50])
+			.range([chartHeight - 10, 10])
 			.domain([10, 100])
 	};
 };

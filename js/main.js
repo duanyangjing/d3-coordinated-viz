@@ -5,10 +5,10 @@ var expressed = attrArray[0];
 
 //name of each attribute to show on the map
 var indicatorName = {};
-indicatorName["city_unmarried_m_f"] = "Sex ratio of Unmarried Urban Population";
-indicatorName["rural_unmarried_m_f"] = "Sex ratio of Unmarried Rural Population";
-indicatorName["city_baby_m_f"] = "Sex ratio of New-born Urban Population";
-indicatorName["rural_baby_m_f"] = "Sex ratio of New-born Ruran Population";
+indicatorName["city_unmarried_m_f"] = "Sex Ratio of Unmarried Urban Population";
+indicatorName["rural_unmarried_m_f"] = "Sex Ratio of Unmarried Rural Population";
+indicatorName["city_baby_m_f"] = "Sex Ratio of New-born Urban Population";
+indicatorName["rural_baby_m_f"] = "Sex Ratio of New-born Ruran Population";
 indicatorName["total_city_percent"] = "Percent of Urban Population";
 
 var chartWidth = 500,
@@ -34,7 +34,6 @@ function setMap() {
 		.attr("width", width)
 		.attr("height", height);
 
-
 	var projection = d3.geo.albers()
 		.center([0, 36.33])
 		.rotate([-103, 0, 0])
@@ -59,7 +58,7 @@ function setMap() {
 		provinces = joinData(provinces, csvData);
 		setGraticule(map, path);
 
-        var backgroundCountry = map.append("path")
+        map.append("path")
         	.datum(asiaRegion)
         	.attr("class", "backgroundCountry")
         	.attr("d", path);
@@ -142,11 +141,11 @@ function setEnumUnits(provinces, map, path, colorScale) {
 function makeColorScale(data) {
 	//data is an array of provinces
     var colorClasses = [
-        "#D4B9DA",
-        "#C994C7",
-        "#DF65B0",
-        "#DD1C77",
-        "#980043"
+        "#fee5d9",
+        "#fcae91",
+        "#fb6a4a",
+        "#de2d26",
+        "#a50f15"
     ];
 
     var colorScale = d3.scale.threshold()
@@ -241,8 +240,6 @@ function updateYAxis(chart) {
 
 function createDropdown(csvData) {
 	var dropdown = d3.select(".dropdown")
-		// .append("select")
-		// .attr("class", "dropdown")
 		.on("change", function() {
 			changeAttribute(this.value, csvData)
 		});
